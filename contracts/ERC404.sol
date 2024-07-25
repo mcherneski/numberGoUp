@@ -130,15 +130,17 @@ abstract contract ERC404 is IERC404 {
   ///      that approval can be revoked.
   function approve(
     address spender_,
-    uint256 valueOrId_
+    uint256 value_
   ) public virtual returns (bool) {
-    if (_isValidTokenId(valueOrId_)) {
-      erc721Approve(spender_, valueOrId_);
-    } else {
-      return erc20Approve(spender_, valueOrId_);
-    }
+    
+    // if (_isValidTokenId(valueOrId_)) {
+    //   erc721Approve(spender_, valueOrId_);
+    // } else {
+      uint256 value = value_ ** units;
+      return erc20Approve(spender_, value);
+    // }
 
-    return true;
+    // return true;
   }
 
   function erc721Approve(address spender_, uint256 id_) public virtual {
@@ -189,9 +191,10 @@ abstract contract ERC404 is IERC404 {
   function transferFrom(
     address from_,
     address to_,
-    uint256 value
+    uint256 value_
   ) public virtual returns (bool) {
       // Intention is to transfer as ERC-20 token (value).
+    uint256 value = value_ * units;
     return erc20TransferFrom(from_, to_, value);
     
   }
@@ -472,7 +475,7 @@ abstract contract ERC404 is IERC404 {
 
       uint256 updatedId = _owned[from_][_owned[from_].length - 1];
       if (updatedId != id_) {
-        
+
         uint256 updatedIndex = _getOwnedIndex(id_);
         // update _owned for sender
         _owned[from_][updatedIndex] = updatedId;

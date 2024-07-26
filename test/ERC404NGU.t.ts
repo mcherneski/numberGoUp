@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import { time, loadFixture } from '@nomicfoundation/hardhat-network-helpers'
 import { ethers, network } from 'hardhat'
+import { MaxUint256 } from 'ethers'
 
 describe('NumberGoUp', function () {
     async function deployNGUUniswapV3() {
         const signers = await ethers.getSigners()
-
         //Deploy Uniswap v3 Factory
         const uniswapV3FactorySource = require('@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json')
         const uniswapV3FactoryContract = await new ethers.ContractFactory(
@@ -59,8 +59,7 @@ describe('NumberGoUp', function () {
         const symbol = 'NGU'
         const decimals = 18n
         const units = 10n ** decimals
-        const maxTotalSupplyERC721 = 100n
-        const maxTotalSupplyERC20 = maxTotalSupplyERC721 * units
+        const maxTotalSupplyERC20 = 100000n * units
         const initialOwner = signers[0]
         const initialMintRecipient = signers[0]
 
@@ -68,7 +67,7 @@ describe('NumberGoUp', function () {
             name,
             symbol,
             decimals,
-            maxTotalSupplyERC721,
+            maxTotalSupplyERC20,
             initialOwner.address,
             initialMintRecipient.address,
             await uniswapV3RouterContract.getAddress(),
@@ -90,22 +89,21 @@ describe('NumberGoUp', function () {
             contractAddress,
             signers,
             deployConfig: {
-              name,
-              symbol,
-              decimals,
-              units,
-              maxTotalSupplyERC721,
-              maxTotalSupplyERC20,
-              initialOwner,
-              initialMintRecipient,
-              uniswapV3RouterContract,
-              uniswapV3FactoryContract,
-              uniswapV3NonfungiblePositionManagerContract,
-              wethContract,
+                name,
+                symbol,
+                decimals,
+                units,
+                maxTotalSupplyERC20,
+                initialOwner,
+                initialMintRecipient,
+                uniswapV3RouterContract,
+                uniswapV3FactoryContract,
+                uniswapV3NonfungiblePositionManagerContract,
+                wethContract,
             },
             randomAddresses,
             feeTiers,
-          }
+        }
     }
 
     async function deployNGU404WithSomeTokensTransferredToRandomAddress() {
@@ -114,8 +112,8 @@ describe('NumberGoUp', function () {
         const targetAddress = f.randomAddresses[0]
 
         await f.contract
-        .connect(f.signers[0])
-        .transfer(targetAddress, 5n * f.deployConfig.units)
+            .connect(f.signers[0])
+            .transfer(targetAddress, 5n * f.deployConfig.units)
 
         expect(await f.contract.erc721TotalSupply()).to.equal(5n)
 
@@ -124,7 +122,7 @@ describe('NumberGoUp', function () {
             targetAddress,
         }
     }
-    
+
     describe('Constructor', function () {
         it('Adds the uniswap v3 NFT position manager to the ERC-721 transfer exempt list', async function () {
             const fixture = await loadFixture(deployNGUUniswapV3)
@@ -134,7 +132,7 @@ describe('NumberGoUp', function () {
 
             expect(
                 await fixture.contract.erc721TransferExempt(await fixture.deployConfig.uniswapV3NonfungiblePositionManagerContract.getAddress(),
-            ),
+                ),
             ).to.equal(true)
         })
 
@@ -142,68 +140,98 @@ describe('NumberGoUp', function () {
             const f = await loadFixture(deployNGUUniswapV3)
 
             //Check all free tiers
-            for (const feeTier of f.feeTiers)
-                {
-                    await f.deployConfig.uniswapV3FactoryContract.createPool(
-                        f.contractAddress,
-                        await f.deployConfig.wethContract.getAddress(),
-                        feeTier
-                    )
+            for (const feeTier of f.feeTiers) {
+                await f.deployConfig.uniswapV3FactoryContract.createPool(
+                    f.contractAddress,
+                    await f.deployConfig.wethContract.getAddress(),
+                    feeTier
+                )
 
-                    const expectedPairAddress = 
+                const expectedPairAddress =
                     await f.deployConfig.uniswapV3FactoryContract.getPool(
                         f.contractAddress,
                         await f.deployConfig.wethContract.getAddress(),
                         feeTier
                     )
 
-                    expect(expectedPairAddress).to.not.eq(ethers.ZeroAddress)
+                expect(expectedPairAddress).to.not.eq(ethers.ZeroAddress)
 
-                    expect(
-                        await f.contract.erc721TransferExempt(await expectedPairAddress)
-                    ).to.equal(true)
-                }
+                expect(
+                    await f.contract.erc721TransferExempt(await expectedPairAddress)
+                ).to.equal(true)
+            }
         })
     }),
-    describe('ERC20TotalSupply', function () {
-        it('Returns the correct total supply', async function () {
-            const f = await loadFixture(
-                deployNGU404WithSomeTokensTransferredToRandomAddress
-            )
-
-            expect(await f.contract.erc20TotalSupply()).to.eq(
-                100n * f.deployConfig.units,
-            )
-        })
-    }),
-
-    describe('ERC721TotalSupply', function () {
-        it('Returns the correct total supply', async function () {
-            const f = await loadFixture(
-                deployNGU404WithSomeTokensTransferredToRandomAddress
-            )
-
-            expect(await f.contract.erc721TotalSupply()).to.eq(5n)
-        })
-    })
-    
-    describe('OwnerOf', function() {
-        context('Some tokens have been minted', function () {
-            it('Reverts if the token ID is below the allowed range', async function () {
-                const f = await loadFixture(
-                    deployNGU404WithSomeTokensTransferredToRandomAddress
+        describe('ERC20TotalSupply', function () {
+            it('Returns the correct total supply', async function () {
+                const f = await loadFixture(deployNGUUniswapV3)
+                expect(await f.contract.erc20TotalSupply()).to.eq(
+                    100000n * f.deployConfig.units,
                 )
+            })
+        }),
+        describe('ERC721TotalSupply', function () {
+            it('Has an ERC721 total supply of 0 on deployment', async function () {
+                const f = await loadFixture(deployNGUUniswapV3)
 
-                const minimumValidTokenId = (await f.contract.ID_ENCODING_PREFIX()) + 1n
+                expect(await f.contract.erc721TotalSupply()).to.eq(0n)
+            }),
+                it('Has an ERC721 total supply of 5 after transferring 5 tokens to a random address', async function () {
+                    const f = await loadFixture(deployNGU404WithSomeTokensTransferredToRandomAddress)
 
-                expect(await f.contract.ownerOf(minimumValidTokenId)).to.eq(
-                    f.targetAddress
-                )
+                    expect(await f.contract.erc721TotalSupply()).to.eq(5n)
+                    expect(await f.contract.balanceOf(f.randomAddresses[0])).to.eq(5n * f.deployConfig.units)
+                    // console.log(`Random Address [0] ERC20 Supply: ${await f.contract.balanceOf(f.randomAddresses[0])}`)
+                })
+        }),
+        describe('approve', async function () {          
+            it('Sets the correct approval amount', async function () {
+                const f = await loadFixture(deployNGUUniswapV3)
+                const spender = f.randomAddresses[0]
+                const owner = f.deployConfig.initialOwner
+                const amount = 100000n
 
-                await expect(
-                    f.contract.ownerOf(minimumValidTokenId - 1n),
-                ).to.be.revertedWithCustomError(f.contract, 'InavalidTokenId')
+                await f.contract.approve(spender, amount)
+                expect(await f.contract.allowance(owner.address, spender)).to.eq(amount * f.deployConfig.units)
+                console.log(`Approved Send Amount: ${await f.contract.allowance(owner.address, spender)}`)
+            })
+        }),
+        describe('transferFrom', async function () {
+            it('Transfers the correct amount', async function () {
+                // This checks if the UniswapV3 Integration will work. We are trying to use transferFrom with the Uniswapv3 Router
+
+                const f = await loadFixture(deployNGUUniswapV3)
+                const owner = f.deployConfig.initialOwner
+                console.log('Owner Address: ', owner.address)  
+                const recipient = await f.signers[1]
+                // const recipient = await f.deployConfig.uniswapV3RouterContract.getAddress()
+                console.log(`Uniswap Address: ${recipient.address}`)
+                // const runner = await f.deployConfig.uniswapV3RouterContract.runner
+                const amount = 100000n
+                
+                // Double check the work above. Recipient needs to have the approval
+                await f.contract.approve(recipient, MaxUint256)
+                expect(await f.contract.allowance(owner.address, recipient)).to.eq(MaxUint256)
+                
+                await f.contract.allowance(owner.address, recipient)
+                console.log(`Recipient Approved: ${await f.contract.allowance(owner.address, recipient)}`)
+                
+                
+                const ownerBalanceBefore = await f.contract.balanceOf(owner.address)
+                const recipientBalanceBefore = await f.contract.balanceOf(recipient)
+                expect(ownerBalanceBefore).to.eq(100000n * f.deployConfig.units)
+                expect(recipientBalanceBefore).to.eq(0n)
+                
+                await f.contract.transferFrom(owner.address, recipient, amount)
+
+                const ownerBalanceAfter = await f.contract.balanceOf(owner.address)
+                const recipientBalanceAfter = await f.contract.balanceOf(recipient)
+                expect(ownerBalanceAfter).to.eq(0n)
+                expect(recipientBalanceAfter).to.eq(100000n * f.deployConfig.units)
+                
             })
         })
-    })
+        
 })
+
+

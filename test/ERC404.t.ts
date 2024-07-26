@@ -15,8 +15,6 @@ describe("ERC404", function () {
     const maxTotalSupplyERC20 = maxTotalSupplyERC721 * units
     const initialOwner = signers[0]
     const initialMintRecipient = signers[0]
-    const idPrefix =
-      57896044618658097711785492504343953926634992332820282019728792003956564819968n
 
     const contract = await factory.deploy(
       name,
@@ -48,7 +46,6 @@ describe("ERC404", function () {
         maxTotalSupplyERC20,
         initialOwner,
         initialMintRecipient,
-        idPrefix,
       },
       randomAddresses,
     }
@@ -141,8 +138,6 @@ describe("ERC404", function () {
     const maxTotalSupplyERC20 = maxTotalSupplyERC721 * units
     const initialOwner = signers[0]
     const initialMintRecipient = signers[0]
-    const idPrefix =
-      57896044618658097711785492504343953926634992332820282019728792003956564819968n
 
     const contract = await factory.deploy(
       name,
@@ -172,7 +167,6 @@ describe("ERC404", function () {
         maxTotalSupplyERC20,
         initialMintRecipient,
         initialOwner,
-        idPrefix,
       },
       randomAddresses,
     }

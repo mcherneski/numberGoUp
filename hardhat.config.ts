@@ -11,7 +11,9 @@ const config: HardhatUserConfig = {
     enabled: true,
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      allowUnlimitedContractSize: true,
+    },
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: ['3132926b39945f9c097b705feb75a87ad989b506ac01823231bfbdf4a64f5576'],

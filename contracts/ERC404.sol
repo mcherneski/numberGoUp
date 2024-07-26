@@ -6,6 +6,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC404} from "./interfaces/IERC404.sol";
 import {ERC721Events} from "./lib/ERC721Events.sol";
 import {ERC20Events} from "./lib/ERC20Events.sol";
+import "hardhat/console.sol";
 
 abstract contract ERC404 is IERC404 {
   /// @dev Token name
@@ -124,23 +125,20 @@ abstract contract ERC404 is IERC404 {
   function tokenURI(uint256 id_) public view virtual returns (string memory);
 
   /// @notice Function for token approvals
-  /// @dev This function assumes the operator is attempting to approve
-  ///      an ERC-721 if valueOrId_ is a possibly valid ERC-721 token id.
-  ///      Unlike setApprovalForAll, spender_ must be allowed to be 0x0 so
+  /// @dev Unlike setApprovalForAll, spender_ must be allowed to be 0x0 so
   ///      that approval can be revoked.
   function approve(
     address spender_,
     uint256 value_
   ) public virtual returns (bool) {
-    
-    // if (_isValidTokenId(valueOrId_)) {
-    //   erc721Approve(spender_, valueOrId_);
-    // } else {
-      uint256 value = value_ ** units;
-      return erc20Approve(spender_, value);
-    // }
+      uint256 value;
+      if (value_ != type(uint256).max) {
+        value = value_ * units;
+      } else {
+        value = type(uint256).max;
+      }
 
-    // return true;
+      return erc20Approve(spender_, value);
   }
 
   function erc721Approve(address spender_, uint256 id_) public virtual {
@@ -168,7 +166,8 @@ abstract contract ERC404 is IERC404 {
     if (spender_ == address(0)) {
       revert InvalidSpender();
     }
-
+    console.log("Allowance value for spender is ", value_);
+    console.log("Spender is ", spender_);
     allowance[msg.sender][spender_] = value_;
 
     emit ERC20Events.Approval(msg.sender, spender_, value_);
@@ -243,12 +242,13 @@ abstract contract ERC404 is IERC404 {
   }
 
   /// @notice Function for ERC-20 transfers from.
-  /// @dev This function is recommended for ERC20 transfers
+  /// @dev This function is recommended for ERC20 transfers, 
   function erc20TransferFrom(
     address from_,
     address to_,
     uint256 value_
   ) public virtual returns (bool) {
+
     // Prevent minting tokens from 0x0.
     if (from_ == address(0)) {
       revert InvalidSender();
@@ -258,14 +258,23 @@ abstract contract ERC404 is IERC404 {
     if (to_ == address(0)) {
       revert InvalidRecipient();
     }
+    console.log("From is ", from_);
+    console.log("To is ", to_);
+    console.log("Message sender is", msg.sender);
+    console.log("Value is", value_);
 
-    uint256 allowed = allowance[from_][msg.sender];
+    if (msg.sender != from_)
+    {
+      uint256 allowed = allowance[from_][msg.sender];
+      console.log("Allowed is", allowed);
+
+
 
     // Check that the operator has sufficient allowance.
-    if (allowed != type(uint256).max) {
-      allowance[from_][msg.sender] = allowed - value_;
+      if (allowed != type(uint256).max) {
+        allowance[from_][msg.sender] = allowed - value_;
+      }
     }
-
     // Transferring ERC-20s directly requires the _transferERC20WithERC721 function.
     // Handles ERC-721 exemptions internally.
     return _transferERC20WithERC721(from_, to_, value_);
@@ -463,7 +472,7 @@ abstract contract ERC404 is IERC404 {
   /// @dev Assign the token to the new owner, and remove from the old owner.
   /// Note that this function allows transfers to and from 0x0.
   /// Does not handle ERC-721 exemptions.
-  function _transferERC721(
+    function _transferERC721(
     address from_,
     address to_,
     uint256 id_
@@ -473,7 +482,7 @@ abstract contract ERC404 is IERC404 {
       // On transfer of an NFT, any previous approval is reset.
       delete getApproved[id_];
 
-      uint256 updatedId = _owned[from_][_owned[from_].length - 1];
+      uint256 updatedId = _owned[from_][0];
       if (updatedId != id_) {
 
         uint256 updatedIndex = _getOwnedIndex(id_);
@@ -484,7 +493,12 @@ abstract contract ERC404 is IERC404 {
       }
 
       // pop
+      for (uint256 i = 0; i < _owned[from_].length - 1; i++) {
+        _owned[from_][i] = _owned[from_][i + 1];
+      }
+
       _owned[from_].pop();
+
     }
 
     // Check if this is a burn.
@@ -513,7 +527,7 @@ abstract contract ERC404 is IERC404 {
   ) internal virtual returns (bool) {
     uint256 erc20BalanceOfSenderBefore = erc20BalanceOf(from_);
     uint256 erc20BalanceOfReceiverBefore = erc20BalanceOf(to_);
-
+    
     _transferERC20(from_, to_, value_);
 
     // Preload for gas savings on branches

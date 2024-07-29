@@ -244,13 +244,7 @@ describe('NumberGoUp', function () {
                 expect(await f.contract.balanceOf(signer1.address)).to.eq(3000000000000000000n)
             
                 await f.contract.connect(signer1).transfer(signer2.address, 1000000000000000000n)
-                const firstToken = await f.contract.ownerOf(1)
-                const secondToken = await f.contract.ownerOf(2)
-                const thirdToken = await f.contract.ownerOf(3)
 
-                console.log('First Token: ', firstToken)
-                console.log('Second Token: ', secondToken)
-                console.log('Third Token: ', thirdToken)
                 expect(await f.contract.ownerOf(1)).to.eq(signer2.address)
             })
         })

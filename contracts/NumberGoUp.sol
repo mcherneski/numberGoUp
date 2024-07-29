@@ -7,6 +7,10 @@ import { ERC404 } from './ERC404.sol';
 import {ERC404UniswapV3Exempt} from './extensions/ERC404UniswapV3Exempt.sol';
 
 contract NumberGoUp is Ownable, ERC404, ERC404UniswapV3Exempt {
+    string public  _uriBase = "https://ipfs.io/ipfs/QmXdFr6gUJy4Xj2p2ZiNr9VUX8eFARau3s73YCLRXW69Me/";
+    uint256 public constant variants = 5;
+    using Strings for uint256;
+
     constructor (
         string memory name_,
         string memory symbol_,
@@ -29,9 +33,34 @@ contract NumberGoUp is Ownable, ERC404, ERC404UniswapV3Exempt {
             _mintERC20(initialMintRecipient_, maxTotalSupplyERC20_);
         }
 
-        function tokenURI(uint256 id_) public pure override returns (string memory) {
-            return string.concat("https://tokenMetaDataDomain.com/token/", Strings.toString(id_));
+        function tokenURI(uint256 id) public view virtual override returns (string memory){
+        
+        uint256 v= (uint256(keccak256(abi.encode(id)))%1000);
+        uint256 d;
+        if(v<60){
+            d=1;
         }
+        if(v>=60&&v<180){
+            d=2;
+        }
+        if(v>=180&&v<380){
+            d=3;
+        }
+        if(v>=380&&v<610){
+            d=4;
+        }
+        if(v>=610){
+            d=5;
+        }
+        return
+            string(
+                abi.encodePacked(
+                    _uriBase,
+                    d.toString(),
+                    '.json'
+                )
+            );
+    }
 
         function setERC721TransferExempt(
             address account_,

@@ -116,7 +116,6 @@ describe('NumberGoUp', function () {
             .transfer(targetAddress, 5n * f.deployConfig.units)
 
         expect(await f.contract.erc721TotalSupply()).to.equal(5n)
-
         return {
             ...f,
             targetAddress,
@@ -181,10 +180,9 @@ describe('NumberGoUp', function () {
 
                     expect(await f.contract.erc721TotalSupply()).to.eq(5n)
                     expect(await f.contract.balanceOf(f.randomAddresses[0])).to.eq(5n * f.deployConfig.units)
-                    // console.log(`Random Address [0] ERC20 Supply: ${await f.contract.balanceOf(f.randomAddresses[0])}`)
                 })
         }),
-        describe('approve', async function () {          
+        describe('Approve', async function () {          
             it('Sets the correct approval amount', async function () {
                 const f = await loadFixture(deployNGUUniswapV3)
                 const spender = f.randomAddresses[0]
@@ -193,19 +191,17 @@ describe('NumberGoUp', function () {
 
                 await f.contract.approve(spender, amount)
                 expect(await f.contract.allowance(owner.address, spender)).to.eq(amount * f.deployConfig.units)
-                console.log(`Approved Send Amount: ${await f.contract.allowance(owner.address, spender)}`)
             })
         }),
-        describe('transferFrom', async function () {
+        describe('Simulated Uniswapv3 transferFrom', async function () {
             it('Transfers the correct amount', async function () {
                 // This checks if the UniswapV3 Integration will work. We are trying to use transferFrom with the Uniswapv3 Router
 
                 const f = await loadFixture(deployNGUUniswapV3)
                 const owner = f.deployConfig.initialOwner
-                console.log('Owner Address: ', owner.address)  
+
                 const recipient = await f.signers[1]
                 // const recipient = await f.deployConfig.uniswapV3RouterContract.getAddress()
-                console.log(`Uniswap Address: ${recipient.address}`)
                 // const runner = await f.deployConfig.uniswapV3RouterContract.runner
                 const amount = 100000n
                 
@@ -214,7 +210,6 @@ describe('NumberGoUp', function () {
                 expect(await f.contract.allowance(owner.address, recipient)).to.eq(MaxUint256)
                 
                 await f.contract.allowance(owner.address, recipient)
-                console.log(`Recipient Approved: ${await f.contract.allowance(owner.address, recipient)}`)
                 
                 await f.contract.setERC721TransferExempt(recipient.address, true)
                 
@@ -230,6 +225,33 @@ describe('NumberGoUp', function () {
                 expect(ownerBalanceAfter).to.eq(0n)
                 expect(recipientBalanceAfter).to.eq(100000n * f.deployConfig.units)
                 
+            })
+        }),
+        describe('Transfer Between Wallets', async function () {
+        
+            it('Transfers the lowest number', async function () {
+                const f = await loadFixture(deployNGUUniswapV3)
+                const owner = f.deployConfig.initialOwner
+                const signer1 = f.signers[1]
+                const signer2 = f.signers[2]
+                console.log('Signer 1: ', signer1.address)
+                console.log('Signer 2: ', signer2.address)
+                console.log('Owner: ', owner.address)  
+
+
+                await f.contract.transfer(signer1.address, 3000000000000000000n)
+                console.log('721 Total Supply: ', await f.contract.erc721TotalSupply())
+                expect(await f.contract.balanceOf(signer1.address)).to.eq(3000000000000000000n)
+            
+                await f.contract.connect(signer1).transfer(signer2.address, 1000000000000000000n)
+                const firstToken = await f.contract.ownerOf(1)
+                const secondToken = await f.contract.ownerOf(2)
+                const thirdToken = await f.contract.ownerOf(3)
+
+                console.log('First Token: ', firstToken)
+                console.log('Second Token: ', secondToken)
+                console.log('Third Token: ', thirdToken)
+                expect(await f.contract.ownerOf(1)).to.eq(signer2.address)
             })
         })
         

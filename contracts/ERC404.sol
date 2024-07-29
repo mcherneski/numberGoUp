@@ -194,6 +194,7 @@ abstract contract ERC404 is IERC404 {
   ) public virtual returns (bool) {
       // Intention is to transfer as ERC-20 token (value).
     uint256 value = value_ * units;
+    console.log('Transfering ', value);
     return erc20TransferFrom(from_, to_, value);
     
   }
@@ -240,7 +241,7 @@ abstract contract ERC404 is IERC404 {
     _transferERC20(from_, to_, units);
     _transferERC721(from_, to_, id_);
   }
-
+ 
   /// @notice Function for ERC-20 transfers from.
   /// @dev This function is recommended for ERC20 transfers, 
   function erc20TransferFrom(
@@ -258,6 +259,7 @@ abstract contract ERC404 is IERC404 {
     if (to_ == address(0)) {
       revert InvalidRecipient();
     }
+    console.log("-------------------- Logs from erc20TransferFrom Function --------------------");
     console.log("From is ", from_);
     console.log("To is ", to_);
     console.log("Message sender is", msg.sender);
@@ -267,8 +269,6 @@ abstract contract ERC404 is IERC404 {
     {
       uint256 allowed = allowance[from_][msg.sender];
       console.log("Allowed is", allowed);
-
-
 
     // Check that the operator has sufficient allowance.
       if (allowed != type(uint256).max) {
@@ -452,6 +452,7 @@ abstract contract ERC404 is IERC404 {
   ) internal virtual {
     // Minting is a special case for which we should not check the balance of
     // the sender, and we should increase the total supply.
+    console.log('Started _transferERC20 Call');
     if (from_ == address(0)) {
       totalSupply += value_;
     } else {
@@ -472,7 +473,52 @@ abstract contract ERC404 is IERC404 {
   /// @dev Assign the token to the new owner, and remove from the old owner.
   /// Note that this function allows transfers to and from 0x0.
   /// Does not handle ERC-721 exemptions.
-    function _transferERC721(
+  //   function _transferERC721(
+  //   address from_,
+  //   address to_,
+  //   uint256 id_
+  // ) internal virtual {
+  //   // If this is not a mint, handle record keeping for transfer from previous owner.
+  //   if (from_ != address(0)) {
+  //     // On transfer of an NFT, any previous approval is reset.
+  //     delete getApproved[id_];
+
+  //     uint256 updatedId = _owned[from_][0];
+  //     if (updatedId != id_) {
+
+  //       uint256 updatedIndex = _getOwnedIndex(id_);
+  //       // update _owned for sender
+  //       _owned[from_][updatedIndex] = updatedId;
+  //       // update index for the moved id
+  //       _setOwnedIndex(updatedId, updatedIndex);
+  //     }
+
+  //     // pop
+  //     for (uint256 i = 0; i < _owned[from_].length - 1; i++) {
+  //       _owned[from_][i] = _owned[from_][i + 1];
+  //     }
+
+  //     _owned[from_].pop();
+
+  //   }
+
+  //   // Check if this is a burn.
+  //   if (to_ != address(0)) {
+  //     // If not a burn, update the owner of the token to the new owner.
+  //     // Update owner of the token to the new owner.
+  //     _setOwnerOf(id_, to_);
+  //     // Push token onto the new owner's stack.
+  //     _owned[to_].push(id_);
+  //     // Update index for new owner's stack.
+  //     _setOwnedIndex(id_, _owned[to_].length - 1);
+  //   } else {
+  //     // If this is a burn, reset the owner of the token to 0x0 by deleting the token from _ownedData.
+  //     delete _ownedData[id_];
+  //   }
+
+  //   emit ERC721Events.Transfer(from_, to_, id_);
+  // }
+  function _transferERC721(
     address from_,
     address to_,
     uint256 id_
@@ -482,9 +528,8 @@ abstract contract ERC404 is IERC404 {
       // On transfer of an NFT, any previous approval is reset.
       delete getApproved[id_];
 
-      uint256 updatedId = _owned[from_][0];
+      uint256 updatedId = _owned[from_][_owned[from_].length - 1];
       if (updatedId != id_) {
-
         uint256 updatedIndex = _getOwnedIndex(id_);
         // update _owned for sender
         _owned[from_][updatedIndex] = updatedId;
@@ -493,12 +538,7 @@ abstract contract ERC404 is IERC404 {
       }
 
       // pop
-      for (uint256 i = 0; i < _owned[from_].length - 1; i++) {
-        _owned[from_][i] = _owned[from_][i + 1];
-      }
-
       _owned[from_].pop();
-
     }
 
     // Check if this is a burn.
@@ -517,7 +557,6 @@ abstract contract ERC404 is IERC404 {
 
     emit ERC721Events.Transfer(from_, to_, id_);
   }
-
   /// @notice Internal function for ERC-20 transfers. Also handles any ERC-721 transfers that may be required.
   // Handles ERC-721 exemptions.
   function _transferERC20WithERC721(
@@ -525,6 +564,7 @@ abstract contract ERC404 is IERC404 {
     address to_,
     uint256 value_
   ) internal virtual returns (bool) {
+    console.log('Started _transferERC20WithErC721 Call');
     uint256 erc20BalanceOfSenderBefore = erc20BalanceOf(from_);
     uint256 erc20BalanceOfReceiverBefore = erc20BalanceOf(to_);
     
@@ -545,9 +585,11 @@ abstract contract ERC404 is IERC404 {
       //         to transfer ERC-721s from the sender, but the recipient should receive ERC-721s
       //         from the bank/minted for any whole number increase in their balance.
       // Only cares about whole number increments.
+      console.log('Sender exempt, recipient not exempt');
       uint256 tokensToRetrieveOrMint = (balanceOf[to_] / units) -
         (erc20BalanceOfReceiverBefore / units);
       for (uint256 i = 0; i < tokensToRetrieveOrMint; ) {
+        console.log('Retrieving or minting', i);
         _retrieveOrMintERC721(to_);
         unchecked {
           ++i;
@@ -558,6 +600,7 @@ abstract contract ERC404 is IERC404 {
       //         to withdraw and store ERC-721s from the sender, but the recipient should not
       //         receive ERC-721s from the bank/minted.
       // Only cares about whole number increments.
+      console.log('Sender not exempt, recipient exempt');
       uint256 tokensToWithdrawAndStore = (erc20BalanceOfSenderBefore / units) -
         (balanceOf[from_] / units);
       for (uint256 i = 0; i < tokensToWithdrawAndStore; ) {
@@ -577,6 +620,7 @@ abstract contract ERC404 is IERC404 {
       //      due to receiving a fractional part that completes a whole token, retrieve or mint an NFT to the recevier.
 
       // Whole tokens worth of ERC-20s get transferred as ERC-721s without any burning/minting.
+      console.log('Nobody exempt');
       uint256 nftsToTransfer = value_ / units;
       for (uint256 i = 0; i < nftsToTransfer; ) {
         // Pop from sender's ERC-721 stack and transfer them (LIFO)

@@ -216,6 +216,7 @@ describe('NumberGoUp', function () {
                 await f.contract.allowance(owner.address, recipient)
                 console.log(`Recipient Approved: ${await f.contract.allowance(owner.address, recipient)}`)
                 
+                await f.contract.setERC721TransferExempt(recipient.address, true)
                 
                 const ownerBalanceBefore = await f.contract.balanceOf(owner.address)
                 const recipientBalanceBefore = await f.contract.balanceOf(recipient)

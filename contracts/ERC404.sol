@@ -166,6 +166,7 @@ abstract contract ERC404 is IERC404 {
     if (spender_ == address(0)) {
       revert InvalidSpender();
     }
+    console.log("Value is %s", value_);
     allowance[msg.sender][spender_] = value_;
 
     emit ERC20Events.Approval(msg.sender, spender_, value_);

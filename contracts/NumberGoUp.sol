@@ -30,7 +30,7 @@ contract NumberGoUp is Ownable, ERC404, ERC404UniswapV3Exempt {
         {
             _setERC721TransferExempt(initialMintRecipient_, true);
             //Previous implementation had maxTotalSupplyERC721 * units
-            _mintERC20(initialMintRecipient_, maxTotalSupplyERC20_);
+            _mintERC20(initialMintRecipient_, maxTotalSupplyERC20_ * units);
         }
 
         function tokenURI(uint256 id) public view virtual override returns (string memory){

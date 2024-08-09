@@ -7,7 +7,7 @@ import { ERC404 } from './ERC404.sol';
 import {ERC404UniswapV3Exempt} from './extensions/ERC404UniswapV3Exempt.sol';
 
 contract NumberGoUp is Ownable, ERC404, ERC404UniswapV3Exempt {
-    string public  _uriBase = "https://ipfs.io/ipfs/QmXdFr6gUJy4Xj2p2ZiNr9VUX8eFARau3s73YCLRXW69Me/";
+    string public  _uriBase = "https://ipfs.io/ipfs/QmS71Jupy5YQC86qGBfhm4qHktYopyZcL6eVteFi2mUxVW/";
     uint256 public constant variants = 5;
     using Strings for uint256;
 
@@ -36,21 +36,21 @@ contract NumberGoUp is Ownable, ERC404, ERC404UniswapV3Exempt {
         function tokenURI(uint256 id) public view virtual override returns (string memory){
         
         uint256 v= (uint256(keccak256(abi.encode(id)))%1000);
-        uint256 d;
+        string d;
         if(v<60){
-            d=1;
+            d="pink_potato";
         }
         if(v>=60&&v<180){
-            d=2;
+            d="blue_potato";
         }
         if(v>=180&&v<380){
-            d=3;
+            d="green_potato";
         }
         if(v>=380&&v<610){
-            d=4;
+            d="orange_potato";
         }
         if(v>=610){
-            d=5;
+            d="red_potato";
         }
         return
             string(
